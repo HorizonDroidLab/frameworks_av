@@ -2630,6 +2630,58 @@ Status CameraService::connectHelper(const sp<CALLBACK>& cameraCb, const std::str
             }
         }
 
+        bool autoframingSupported = true;
+        auto availableAutoframingEntry = chars.find(ANDROID_CONTROL_AUTOFRAMING_AVAILABLE);
+        if ((availableAutoframingEntry.count == 1) && (availableAutoframingEntry.data.u8[0] ==
+                    ANDROID_CONTROL_AUTOFRAMING_AVAILABLE_FALSE)) {
+            autoframingSupported = false;
+        }
+
+        if (autoframingSupported) {
+            // Set autoframing override behaviour
+            if (mOverrideAutoframingMode != ANDROID_CONTROL_AUTOFRAMING_AUTO) {
+                client->setAutoframingOverride(mOverrideAutoframingMode);
+            } else {
+                client->setAutoframingOverride(
+                    mCameraServiceProxyWrapper->getAutoframingOverride(
+                        clientPackageName));
+            }
+        }
+
+        // Automotive privileged client AID_AUTOMOTIVE_EVS using exterior system camera for use
+        // cases such as rear view and surround view cannot be disabled and are exempt from camera
+        // privacy policy.
+        if ((!isAutomotivePrivilegedClient(packageUid) ||
+                !isAutomotiveExteriorSystemCamera(cameraId))) {
+            // Set camera muting behavior.
+            bool isCameraPrivacyEnabled =
+                    mSensorPrivacyPolicy->isCameraPrivacyEnabled();
+            if (client->supportsCameraMute()) {
+                client->setCameraMute(
+                        mOverrideCameraMuteMode || isCameraPrivacyEnabled);
+            } else if (isCameraPrivacyEnabled) {
+                // no camera mute supported, but privacy is on! => disconnect
+                ALOGI("Camera mute not supported for package: %s, camera id: %s",
+                        client->getPackageName().c_str(), cameraId.c_str());
+                // Do not hold mServiceLock while disconnecting clients, but
+                // retain the condition blocking other clients from connecting
+                // in mServiceLockWrapper if held.
+                mServiceLock.unlock();
+                // Clear caller identity temporarily so client disconnect PID
+                // checks work correctly
+                int64_t token = CameraThreadState::clearCallingIdentity();
+                // Note AppOp to trigger the "Unblock" dialog
+                client->noteAppOp();
+                client->disconnect();
+                CameraThreadState::restoreCallingIdentity(token);
+                // Reacquire mServiceLock
+                mServiceLock.lock();
+
+                return STATUS_ERROR_FMT(ERROR_DISABLED,
+                        "Camera \"%s\" disabled due to camera mute", cameraId.c_str());
+            }
+        }
+
         if (shimUpdateOnly) {
             // If only updating legacy shim parameters, immediately disconnect client
             mServiceLock.unlock();

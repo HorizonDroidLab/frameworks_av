@@ -718,6 +718,7 @@ convertToHALStreamCombination(
         aidl::android::hardware::camera::device::StreamConfiguration &streamConfiguration,
         bool overrideForPerfClass, metadata_vendor_id_t vendorTagId,
         bool checkSessionParams, bool *earlyExit, bool isPriviledgedClient) {
+        bool checkSessionParams, bool *earlyExit) {
     using SensorPixelMode = aidl::android::hardware::camera::metadata::SensorPixelMode;
     auto operatingMode = sessionConfiguration.getOperatingMode();
     binder::Status res = checkOperatingMode(operatingMode, deviceInfo,

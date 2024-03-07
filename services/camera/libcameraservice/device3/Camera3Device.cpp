@@ -3613,6 +3613,7 @@ bool Camera3Device::RequestThread::threadLoop() {
     for (size_t i = 0; i < mNextRequests.size(); i++) {
         auto& nextRequest = mNextRequests.editItemAt(i);
         sp<CaptureRequest> captureRequest = nextRequest.captureRequest;
+        captureRequest->mTestPatternChanged = overrideTestPattern(captureRequest);
         // Do not override rotate&crop for stream configurations that include
         // SurfaceViews(HW_COMPOSER) output, unless mOverrideToPortrait is set.
         // The display rotation there will be compensated by NATIVE_WINDOW_TRANSFORM_INVERSE_DISPLAY
@@ -3781,6 +3782,7 @@ status_t Camera3Device::RequestThread::prepareHalRequests() {
                          captureRequest->mRotateAndCropChanged ||
                          captureRequest->mAutoframingChanged ||
                          testPatternChanged || settingsOverrideChanged ||
+                         captureRequest->mTestPatternChanged || settingsOverrideChanged ||
                          (flags::inject_session_params() && mForceNewRequestAfterReconfigure)) &&
                 // Request settings are all the same within one batch, so only treat the first
                 // request in a batch as new
