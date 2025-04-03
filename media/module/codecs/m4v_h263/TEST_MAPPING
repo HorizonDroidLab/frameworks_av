@@ -1,6 +1,0 @@
-{
-  "postsubmit": [
-    { "name": "Mpeg4H263DecoderTest"},
-    { "name": "Mpeg4H263EncoderTest"}
-  ]
-}

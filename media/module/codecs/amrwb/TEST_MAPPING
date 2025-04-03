@@ -1,6 +1,0 @@
-{
-  "postsubmit": [
-    { "name": "AmrwbDecoderTest"},
-    { "name": "AmrwbEncoderTest"}
-  ]
-}

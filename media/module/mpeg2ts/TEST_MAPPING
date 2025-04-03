@@ -1,5 +1,0 @@
-{
-  "postsubmit": [
-    { "name": "Mpeg2tsUnitTest" }
-  ]
-}
